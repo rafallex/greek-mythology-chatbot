@@ -29,7 +29,7 @@ That is 124 deity articles in total covering Olympians, Titans, primordials, und
 
 ## Approach
 
-`trainmodel2.py` does LoRA fine-tuning through `trl.SFTTrainer`:
+`train.py` does LoRA fine-tuning through `trl.SFTTrainer`:
 
 - **LoRA**: `r=8`, `alpha=16`, `dropout=0.12`, applied to `q_proj / k_proj / v_proj / o_proj`.
 - **Schedule**: 1 epoch, per-device batch size 1, gradient accumulation 16, LR `3e-5`, cosine scheduler with 5% warmup, AdamW with weight decay 0.01, FP16 on CUDA, gradient checkpointing, seed 42.
@@ -41,7 +41,7 @@ The trained LoRA adapter is saved to `./qwen3_greek_gods_lora_minimal`.
 
 ## What we observed
 
-After fine-tuning, the model produces fuller, more on-topic deity summaries than the base model, and — thanks to the mixed-in generic examples — it still answers the off-domain control questions instead of degenerating into mythology for every prompt. `trainmodel2.py` ends by running three probe prompts ("Who is Zeus?", "Explain the role of Athena.", "Explain quantum entanglement simply.") so the domain vs. general-knowledge behaviour is visible right after training, and `trymodels.py` / the Gradio UI let you compare base vs. fine-tuned on any prompt you type.
+After fine-tuning, the model produces fuller, more on-topic deity summaries than the base model, and — thanks to the mixed-in generic examples — it still answers the off-domain control questions instead of degenerating into mythology for every prompt. `train.py` ends by running three probe prompts ("Who is Zeus?", "Explain the role of Athena.", "Explain quantum entanglement simply.") so the domain vs. general-knowledge behaviour is visible right after training, and `compare_models.py` / the Gradio UI let you compare base vs. fine-tuned on any prompt you type.
 
 (We did not commit the trained adapter weights or a saved metrics file to this repo, so there are no fixed accuracy/loss numbers to quote here — the scripts regenerate everything from the committed corpora.)
 
@@ -52,8 +52,8 @@ After fine-tuning, the model produces fuller, more on-topic deity summaries than
 | `scraper.py` | BeautifulSoup scraper that builds the Theoi JSON corpus (deity content + length/timestamp metadata). |
 | `greek_gods_complete_data.json` | Theoi corpus (61 deities). |
 | `greek_gods_wikipedia_data.json` | Wikipedia corpus (63 deities), used together with Theoi as the fine-tuning source. |
-| `trainmodel2.py` | LoRA fine-tuning with `trl.SFTTrainer` → `./qwen3_greek_gods_lora_minimal`. |
-| `trymodels.py` | CLI that loads base Qwen3-0.6B and the LoRA-adapted version on CPU and prints both answers to the same prompt. |
+| `train.py` | LoRA fine-tuning with `trl.SFTTrainer` → `./qwen3_greek_gods_lora_minimal`. |
+| `compare_models.py` | CLI that loads base Qwen3-0.6B and the LoRA-adapted version on CPU and prints both answers to the same prompt. |
 | `gradio_chatbot.py` | Gradio `ChatInterface` with a radio toggle between base and fine-tuned model (Qwen chat template, `temperature=0.7`, `top_p=0.9`, `max_new_tokens=512`). |
 
 ## Run
@@ -62,8 +62,8 @@ After fine-tuning, the model produces fuller, more on-topic deity summaries than
 pip install torch transformers peft trl datasets gradio beautifulsoup4 requests
 
 python scraper.py            # (re-)build the Theoi JSON corpus
-python trainmodel2.py        # LoRA fine-tune Qwen3-0.6B -> ./qwen3_greek_gods_lora_minimal
-python gradio_chatbot.py     # launch the Gradio UI (or: python trymodels.py for the CLI)
+python train.py        # LoRA fine-tune Qwen3-0.6B -> ./qwen3_greek_gods_lora_minimal
+python gradio_chatbot.py     # launch the Gradio UI (or: python compare_models.py for the CLI)
 ```
 
 The JSON corpora are committed, so you can skip the scrape and go straight to training. The inference scripts run on CPU; training is much faster on a single GPU with FP16.
